@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Finanças">
+<meta name="theme-color" content="#0d0d12">
+<title>Controle Financeiro</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<!-- ░░ INSTRUÇÕES FIREBASE ░░
+  1. Acesse https://console.firebase.google.com
+  2. Crie um projeto (ex: "financeiro-carlos-deia")
+  3. Vá em "Realtime Database" → Criar banco de dados → modo teste
+  4. Vá em Configurações do projeto → Seus apps → Web (</>)
+  5. Copie os valores e substitua abaixo nas variáveis FIREBASE_CONFIG
+-->
+<script>
+  // ══════════════════════════════════════════
+  //  COLE AQUI SUAS CREDENCIAIS DO FIREBASE
+  // ══════════════════════════════════════════
+  const FIREBASE_CONFIG = {
+    apiKey:            "AIzaSyCS1OekYpR_y1LflNpSquXGEXrgx8gEw2Y",
+    authDomain:        "financeiro-carlos-e-deia.firebaseapp.com",
+    databaseURL:       "https://financeiro-carlos-e-deia-default-rtdb.firebaseio.com",
+    projectId:         "financeiro-carlos-e-deia",
+    storageBucket:     "financeiro-carlos-e-deia.firebasestorage.app",
+    messagingSenderId: "415771085914",
+    appId:             "1:415771085914:web:f2b3caf56f352811431c63"
+  };
+  // ══════════════════════════════════════════
+</script>
+
+<style>
+  :root {
+    --bg: #0d0d12;
+    --bg2: #13131f;
+    --bg3: #1a1a2e;
+    --border: #1e2035;
+    --border2: #2d2d4e;
+    --text: #e8e6f0;
+    --muted: #6b7280;
+    --dim: #374151;
+    --purple: #7c3aed;
+    --purple-light: #a78bfa;
+    --pink: #f9a8d4;
+    --green: #22c55e;
+    --red: #f87171;
+    --yellow: #f59e0b;
+    --cat-casa: #4ade80;
+    --cat-refugio: #60a5fa;
+    --cat-studio: #f59e0b;
+    --cat-bio: #e879f9;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Sora', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overscroll-behavior: none; }
+  button { font-family: 'Sora', sans-serif; cursor: pointer; }
+  input, select { font-family: 'Sora', sans-serif; }
+  select option { background: var(--bg3); color: var(--text); }
+
+  /* ── Screens ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── Login ── */
+  #login-screen {
+    min-height: 100vh; display: flex; align-items: center;
+    justify-content: center; padding: 24px;
+  }
+  .login-box { width: 100%; max-width: 320px; text-align: center; }
+  .login-logo {
+    width: 64px; height: 64px; border-radius: 18px; margin: 0 auto 20px;
+    background: linear-gradient(135deg,#7c3aed,#4f46e5);
+    display: flex; align-items: center; justify-content: center; font-size: 28px;
+  }
+  .login-title { font-weight: 700; font-size: 20px; margin-bottom: 6px; }
+  .login-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+  .login-btn {
+    width: 100%; padding: 15px; border-radius: 14px;
+    font-size: 15px; font-weight: 700; display: flex;
+    align-items: center; justify-content: center; gap: 10px;
+    margin-bottom: 10px; border: 1px solid;
+    transition: transform .1s, opacity .1s;
+  }
+  .login-btn:active { transform: scale(.97); }
+  .login-btn.carlos { border-color: var(--purple); background: #4c1d9511; color: var(--purple-light); }
+  .login-btn.deia   { border-color: #db2777; background: #83185711; color: var(--pink); }
+  .login-note { margin-top: 20px; font-size: 11px; color: var(--dim); line-height: 1.6; }
+
+  /* ── Config warning ── */
+  #config-warning {
+    background: #7f1d1d; border: 1px solid #ef4444; border-radius: 12px;
+    padding: 14px; margin-bottom: 16px; font-size: 12px; line-height: 1.6;
+    display: none;
+  }
+  #config-warning.show { display: block; }
+  #config-warning strong { color: #fca5a5; }
+
+  /* ── Header ── */
+  #header {
+    background: linear-gradient(135deg,#1a1a2e,#16213e);
+    padding: 16px 18px 0; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .header-brand { display: flex; align-items: center; gap: 8px; }
+  .brand-icon {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg,#7c3aed,#4f46e5);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+  }
+  .brand-name { font-weight: 700; font-size: 14px; }
+  .brand-status { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+  .brand-status.saving { color: var(--yellow); }
+  .brand-status.saved  { color: var(--green); }
+  .brand-status.offline { color: var(--red); }
+  #user-badge {
+    display: flex; align-items: center; gap: 6px; padding: 5px 10px;
+    border-radius: 20px; cursor: pointer; border: 1px solid;
+    transition: opacity .2s;
+  }
+  #user-badge:active { opacity: .7; }
+  .badge-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .badge-name { font-size: 11px; font-weight: 600; }
+  .badge-exit { font-size: 10px; color: var(--dim); }
+  .tabs { display: flex; gap: 2px; }
+  .tab-btn {
+    padding: 8px 12px; border: none; border-radius: 8px 8px 0 0;
+    background: transparent; color: var(--muted);
+    font-size: 11px; font-weight: 600;
+    border-bottom: 2px solid transparent; transition: all .2s;
+  }
+  .tab-btn.active { background: var(--bg); color: var(--purple-light); border-bottom-color: var(--purple); }
+
+  /* ── Content ── */
+  #content { padding: 20px 16px; max-width: 560px; margin: 0 auto; }
+
+  /* ── Tab panels ── */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Voice button ── */
+  .voice-center { text-align: center; margin-bottom: 20px; }
+  #voice-btn {
+    width: 80px; height: 80px; border-radius: 50%; border: none;
+    background: radial-gradient(circle,#7c3aed,#4f46e5);
+    color: #fff; font-size: 28px;
+    box-shadow: 0 0 0 8px rgba(124,58,237,.15);
+    transition: all .3s;
+  }
+  #voice-btn.recording {
+    background: radial-gradient(circle,#ef4444,#b91c1c);
+    box-shadow: 0 0 0 10px rgba(239,68,68,.2);
+    animation: pulse 1s infinite;
+  }
+  .voice-label { margin-top: 8px; font-size: 12px; color: var(--muted); font-weight: 600; }
+  .voice-label.recording { color: var(--red); }
+
+  /* ── Transcript ── */
+  #transcript-box {
+    background: var(--bg3); border: 1px solid var(--border2); border-radius: 10px;
+    padding: 12px; margin-bottom: 14px; font-size: 12px; color: var(--purple-light);
+    line-height: 1.6; display: none;
+  }
+  #transcript-box .lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: 600; }
+  #ai-loading { text-align: center; color: var(--purple); font-size: 12px; margin-bottom: 14px; display: none; }
+
+  /* ── Form card ── */
+  .form-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .field-label {
+    font-size: 10px; color: var(--muted); font-weight: 600;
+    text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px;
+  }
+  .tipo-row { display: flex; gap: 8px; }
+  .tipo-btn {
+    flex: 1; padding: 10px 0; border-radius: 10px; border: 1px solid transparent;
+    font-size: 13px; font-weight: 600; background: var(--border); color: var(--muted);
+    transition: all .2s;
+  }
+  .tipo-btn.active-gasto   { background: #7f1d1d; border-color: var(--red); color: #fff; }
+  .tipo-btn.active-receita { background: #14532d; border-color: var(--green); color: #fff; }
+  .cat-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .cat-btn {
+    padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border2);
+    background: transparent; color: var(--muted); font-size: 12px; font-weight: 600;
+    transition: all .15s;
+  }
+  .pgto-row { display: flex; gap: 6px; }
+  .pgto-btn {
+    flex: 1; padding: 8px 0; border-radius: 8px; border: 1px solid var(--border2);
+    background: transparent; color: var(--muted); font-size: 12px; font-weight: 600;
+    transition: all .2s;
+  }
+  .pgto-btn.active { border-color: var(--purple); background: #4c1d9522; color: var(--purple-light); }
+  .field-input {
+    width: 100%; padding: 10px 12px; background: var(--bg);
+    border: 1px solid var(--border2); border-radius: 8px; color: var(--text);
+    font-size: 14px; outline: none; transition: border-color .2s;
+  }
+  .field-input:focus { border-color: var(--purple); }
+  .field-input.small { width: 80px; }
+  #bandeira-row { display: none; }
+  .save-btn {
+    padding: 13px 0; border: none; border-radius: 12px;
+    background: linear-gradient(135deg,#7c3aed,#4f46e5);
+    color: #fff; font-size: 15px; font-weight: 700;
+    box-shadow: 0 4px 20px rgba(124,58,237,.4); transition: opacity .2s;
+  }
+  .save-btn:active { opacity: .8; }
+
+  /* ── Lançamentos ── */
+  .filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .filter-btn {
+    padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border2);
+    background: transparent; color: var(--muted); font-size: 11px; font-weight: 600;
+    transition: all .15s;
+  }
+  .entries-count { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  .entry-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .entry-card.receita { border-color: #14532d; }
+  .entry-icon {
+    width: 38px; height: 38px; border-radius: 9px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .entry-info { flex: 1; min-width: 0; }
+  .entry-desc { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .entry-meta { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .entry-amount { text-align: right; flex-shrink: 0; }
+  .entry-value { font-weight: 700; font-size: 14px; }
+  .entry-parcel { font-size: 10px; color: var(--muted); }
+  .entry-del { background: none; border: none; color: var(--dim); font-size: 14px; padding: 4px; flex-shrink: 0; }
+  .empty-msg { text-align: center; color: var(--border2); padding: 50px 0; font-size: 13px; }
+  #loading-entries { text-align: center; color: var(--muted); padding: 30px 0; font-size: 13px; }
+
+  /* ── Dashboard ── */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .stat-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 10px; text-align: center;
+  }
+  .stat-icon { font-size: 18px; margin-bottom: 3px; }
+  .stat-label { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; margin-bottom: 3px; }
+  .stat-value { font-size: 12px; font-weight: 700; }
+  .section-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 16px; margin-bottom: 14px;
+  }
+  .section-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; }
+  .cat-bar-row { margin-bottom: 10px; }
+  .cat-bar-top { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .cat-bar-name { font-size: 12px; font-weight: 600; }
+  .cat-bar-val { font-size: 12px; color: #9ca3af; }
+  .cat-bar-track { height: 5px; background: var(--border); border-radius: 5px; overflow: hidden; }
+  .cat-bar-fill { height: 100%; border-radius: 5px; transition: width .5s ease; }
+  .cat-bar-pct { font-size: 10px; color: var(--dim); margin-top: 2px; }
+  .pgto-cards { display: flex; gap: 8px; }
+  .pgto-card {
+    flex: 1; background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 10px 8px; text-align: center;
+  }
+  .pgto-card-icon { font-size: 16px; margin-bottom: 3px; }
+  .pgto-card-label { font-size: 10px; color: var(--muted); font-weight: 600; margin-bottom: 3px; }
+  .pgto-card-val { font-size: 12px; font-weight: 700; }
+  .user-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .recent-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .recent-desc { color: #9ca3af; }
+  .recent-author { font-size: 10px; margin-left: 6px; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; top: 20px; right: 20px; z-index: 999;
+    padding: 11px 18px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    box-shadow: 0 8px 30px rgba(0,0,0,.5); animation: fadeIn .2s ease;
+    display: none; max-width: calc(100vw - 40px);
+  }
+  #toast.show { display: block; }
+  #toast.ok  { background: #14532d; border: 1px solid var(--green); color: #fff; }
+  #toast.err { background: #7f1d1d; border: 1px solid var(--red); color: #fff; }
+
+  /* ── Sync indicator ── */
+  #sync-dot {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); margin-right: 4px; vertical-align: middle;
+    animation: blink 2s infinite;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="login-screen" class="screen active">
+  <div class="login-box">
+    <div class="login-logo">₿</div>
+    <div class="login-title">Controle Financeiro</div>
+    <div class="login-sub">Quem está acessando?</div>
+    <div id="config-warning">
+      <strong>⚠ Firebase não configurado ainda.</strong><br>
+      O app funciona normalmente, mas os dados só ficam salvos neste dispositivo.<br>
+      Siga as instruções no arquivo para ativar a sincronização.
+    </div>
+    <button class="login-btn carlos" id="btn-carlos">
+      <span style="font-size:22px">👨</span> Carlos
+    </button>
+    <button class="login-btn deia" id="btn-deia">
+      <span style="font-size:22px">👩</span> Deia
+    </button>
+    <div class="login-note">Dados sincronizados em tempo real entre vocês dois.</div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app-screen" class="screen">
+
+  <!-- Header -->
+  <div id="header">
+    <div class="header-top">
+      <div class="header-brand">
+        <div class="brand-icon">₿</div>
+        <div>
+          <div class="brand-name">Controle Financeiro</div>
+          <div class="brand-status" id="sync-status"><span id="sync-dot"></span>conectando...</div>
+        </div>
+      </div>
+      <div id="user-badge" onclick="logout()">
+        <div class="badge-dot" id="badge-dot"></div>
+        <span class="badge-name" id="badge-name"></span>
+        <span class="badge-exit">sair</span>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('registro')" id="tab-registro">🎙 Registro</button>
+      <button class="tab-btn" onclick="switchTab('lancamentos')" id="tab-lancamentos">📋 Lançamentos</button>
+      <button class="tab-btn" onclick="switchTab('dashboard')" id="tab-dashboard">📊 Dashboard</button>
+    </div>
+  </div>
+
+  <div id="content">
+
+    <!-- ══ REGISTRO ══ -->
+    <div class="tab-panel active" id="panel-registro">
+      <div class="voice-center">
+        <button id="voice-btn" onclick="toggleRecording()">🎙</button>
+        <div class="voice-label" id="voice-label">Toque para falar</div>
+      </div>
+
+      <div id="transcript-box">
+        <div class="lbl">Você disse:</div>
+        <div id="transcript-text"></div>
+      </div>
+      <div id="ai-loading">✨ Processando com IA...</div>
+
+      <div class="form-card">
+        <!-- Tipo -->
+        <div>
+          <div class="tipo-row">
+            <button class="tipo-btn active-gasto" id="btn-gasto" onclick="setTipo('gasto')">💸 Gasto</button>
+            <button class="tipo-btn" id="btn-receita" onclick="setTipo('receita')">💰 Receita</button>
+          </div>
+        </div>
+
+        <!-- Categoria -->
+        <div id="categoria-row">
+          <div class="field-label">Categoria</div>
+          <div class="cat-row">
+            <button class="cat-btn" id="cat-Casa"    onclick="setCat('Casa')"    style="border-color:var(--cat-casa);background:rgba(74,222,128,.13);color:var(--cat-casa)">Casa</button>
+            <button class="cat-btn" id="cat-Refúgio" onclick="setCat('Refúgio')" >Refúgio</button>
+            <button class="cat-btn" id="cat-Studio"  onclick="setCat('Studio')"  >Studio</button>
+            <button class="cat-btn" id="cat-Biogeral" onclick="setCat('Biogeral')">Biogeral</button>
+          </div>
+        </div>
+
+        <!-- Valor -->
+        <div>
+          <div class="field-label">Valor (R$)</div>
+          <input type="text" class="field-input" id="f-valor" placeholder="0,00" inputmode="decimal">
+        </div>
+
+        <!-- Descrição -->
+        <div>
+          <div class="field-label" id="desc-label">Descrição</div>
+          <input type="text" class="field-input" id="f-desc" placeholder="Ex: mercado, conta de luz...">
+        </div>
+
+        <!-- Forma pagamento -->
+        <div id="pgto-row">
+          <div class="field-label">Forma de pagamento</div>
+          <div class="pgto-row">
+            <button class="pgto-btn" id="pgto-Dinheiro" onclick="setPgto('Dinheiro')">Dinheiro</button>
+            <button class="pgto-btn active" id="pgto-Pix" onclick="setPgto('Pix')">Pix</button>
+            <button class="pgto-btn" id="pgto-Cartão" onclick="setPgto('Cartão')">Cartão</button>
+          </div>
+        </div>
+
+        <!-- Bandeira -->
+        <div id="bandeira-row">
+          <div class="field-label">Bandeira</div>
+          <select class="field-input" id="f-bandeira">
+            <option value="">Selecione...</option>
+            <option>Visa</option><option>Mastercard</option><option>Elo</option>
+            <option>Amex</option><option>Hipercard</option><option>Outra</option>
+          </select>
+        </div>
+
+        <!-- Parcelas -->
+        <div id="parcelas-row">
+          <div class="field-label">Parcelas</div>
+          <input type="number" class="field-input small" id="f-parcelas" value="1" min="1" max="48">
+        </div>
+
+        <!-- Data -->
+        <div>
+          <div class="field-label">Data</div>
+          <input type="date" class="field-input" id="f-data">
+        </div>
+
+        <button class="save-btn" onclick="salvar()">Salvar lançamento</button>
+      </div>
+    </div>
+
+    <!-- ══ LANÇAMENTOS ══ -->
+    <div class="tab-panel" id="panel-lancamentos">
+      <div class="filter-row" id="filter-row"></div>
+      <div class="entries-count" id="entries-count"></div>
+      <div id="loading-entries">Carregando...</div>
+      <div id="entries-list"></div>
+    </div>
+
+    <!-- ══ DASHBOARD ══ -->
+    <div class="tab-panel" id="panel-dashboard">
+      <div class="filter-row" id="dash-filter-row"></div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-icon">💰</div>
+          <div class="stat-label">Receitas</div>
+          <div class="stat-value" id="d-receitas" style="color:var(--green)">R$ 0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">💸</div>
+          <div class="stat-label">Gastos</div>
+          <div class="stat-value" id="d-gastos" style="color:var(--red)">R$ 0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⚖️</div>
+          <div class="stat-label">Saldo</div>
+          <div class="stat-value" id="d-saldo">R$ 0</div>
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="section-title">Gastos por Categoria</div>
+        <div id="d-categorias"></div>
+      </div>
+      <div class="section-card">
+        <div class="section-title">Por Forma de Pagamento</div>
+        <div class="pgto-cards" id="d-pgto"></div>
+      </div>
+      <div class="section-card" id="d-users-card" style="display:none">
+        <div class="section-title">Por Usuário</div>
+        <div id="d-users"></div>
+      </div>
+      <div class="section-card">
+        <div class="section-title">Últimos lançamentos</div>
+        <div id="d-recentes"></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<div id="toast"></div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// ── State ──
+let currentUser = null;
+let entries = [];
+let formState = {
+  tipo: 'gasto', categoria: 'Casa',
+  pgto: 'Pix', data: todayStr()
+};
+let filterUser = 'Todos';
+let dashFilter = 'Todos';
+let recording = false;
+let recognition = null;
+let db = null;
+let dbRef = null;
+let firebaseOk = false;
+
+const CATS = ['Casa','Refúgio','Studio','Biogeral'];
+const CAT_COLORS = { 'Casa':'#4ade80','Refúgio':'#60a5fa','Studio':'#f59e0b','Biogeral':'#e879f9' };
+const USER_COLORS = { Carlos:'#a78bfa', Deia:'#f9a8d4' };
+const CAT_ICONS = { 'Casa':'🏠','Refúgio':'🌿','Studio':'🎬','Biogeral':'🔬' };
+
+
+// ── Firebase init ──
+function initFirebase() {
+  if (FIREBASE_CONFIG.apiKey === 'COLE_AQUI_apiKey') {
+    document.getElementById('config-warning').classList.add('show');
+    setSyncStatus('sem Firebase', 'offline');
+    // Fallback to localStorage
+    try {
+      const saved = localStorage.getItem('fin-entries');
+      if (saved) entries = JSON.parse(saved);
+    } catch {}
+    return;
+  }
+  try {
+    const app = initializeApp(FIREBASE_CONFIG);
+    db = getDatabase(app);
+    dbRef = ref(db, 'entries');
+    firebaseOk = true;
+    onValue(dbRef, (snap) => {
+      const val = snap.val();
+      entries = val ? Object.values(val).sort((a,b) => b.id - a.id) : [];
+      setSyncStatus('● sincronizado', 'saved');
+      renderAll();
+    }, (err) => {
+      setSyncStatus('sem conexão', 'offline');
+    });
+    setSyncStatus('conectando...', '');
+  } catch(e) {
+    setSyncStatus('erro Firebase', 'offline');
+  }
+}
+
+// ── Persist ──
+async function persist(newEntries) {
+  setSyncStatus('salvando...', 'saving');
+  if (firebaseOk && db) {
+    try {
+      const obj = {};
+      newEntries.forEach(e => { obj['e' + e.id] = e; });
+      await set(dbRef, obj);
+      setSyncStatus('● sincronizado', 'saved');
+    } catch {
+      showToast('Erro ao sincronizar', 'err');
+      setSyncStatus('erro ao salvar', 'offline');
+    }
+  } else {
+    // localStorage fallback
+    try { localStorage.setItem('fin-entries', JSON.stringify(newEntries)); } catch {}
+    setSyncStatus('salvo localmente', 'saved');
+    entries = newEntries;
+    renderAll();
+  }
+}
+
+// ── Helpers ──
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+function fmt(n) { return (n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function parseMoney(s) { const n = parseFloat(String(s).replace(/[^\d,\.]/g,'').replace(',','.')); return isNaN(n)?null:n; }
+function setSyncStatus(txt, cls) {
+  const el = document.getElementById('sync-status');
+  el.textContent = txt;
+  el.className = 'brand-status ' + (cls||'');
+}
+function showToast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'show ' + type;
+  setTimeout(() => t.className = '', 3000);
+}
+
+// ── Login / Logout ──
+window.login = function(name) {
+  currentUser = name;
+  sessionStorage.setItem('fin-user', name);
+  document.getElementById('login-screen').classList.remove('active');
+  document.getElementById('app-screen').classList.add('active');
+  const c = USER_COLORS[name] || '#a78bfa';
+  const badge = document.getElementById('user-badge');
+  badge.style.background = c + '18';
+  badge.style.borderColor = c + '44';
+  document.getElementById('badge-dot').style.background = c;
+  document.getElementById('badge-name').style.color = c;
+  document.getElementById('badge-name').textContent = name;
+  document.getElementById('f-data').value = todayStr();
+  initFirebase();
+  renderAll();
+};
+
+window.logout = function() {
+  currentUser = null;
+  sessionStorage.removeItem('fin-user');
+  document.getElementById('app-screen').classList.remove('active');
+  document.getElementById('login-screen').classList.add('active');
+};
+
+// Auto-login
+const saved = sessionStorage.getItem('fin-user');
+if (saved) { setTimeout(() => login(saved), 100); }
+
+// ── Tabs ──
+window.switchTab = function(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  renderAll();
+};
+
+// ── Form ──
+window.setTipo = function(t) {
+  formState.tipo = t;
+  document.getElementById('btn-gasto').className = 'tipo-btn' + (t==='gasto' ? ' active-gasto' : '');
+  document.getElementById('btn-receita').className = 'tipo-btn' + (t==='receita' ? ' active-receita' : '');
+  document.getElementById('categoria-row').style.display = t==='gasto' ? '' : 'none';
+  document.getElementById('pgto-row').style.display = t==='gasto' ? '' : 'none';
+  document.getElementById('bandeira-row').style.display = 'none';
+  document.getElementById('parcelas-row').style.display = t==='gasto' ? '' : 'none';
+  document.getElementById('desc-label').textContent = t==='receita' ? 'Origem / Descrição' : 'Descrição';
+  document.getElementById('f-desc').placeholder = t==='receita' ? 'Ex: honorários XR, aluguel...' : 'Ex: mercado, conta de luz...';
+};
+
+window.setCat = function(c) {
+  formState.categoria = c;
+  CATS.forEach(cat => {
+    const btn = document.getElementById('cat-'+cat);
+    if (!btn) return;
+    const col = CAT_COLORS[cat];
+    if (cat === c) {
+      btn.style.borderColor = col; btn.style.background = col+'22'; btn.style.color = col;
+    } else {
+      btn.style.borderColor = 'var(--border2)'; btn.style.background = 'transparent'; btn.style.color = 'var(--muted)';
+    }
+  });
+};
+
+window.setPgto = function(p) {
+  formState.pgto = p;
+  ['Dinheiro','Pix','Cartão'].forEach(fp => {
+    document.getElementById('pgto-'+fp).className = 'pgto-btn' + (fp===p ? ' active' : '');
+  });
+  document.getElementById('bandeira-row').style.display = p==='Cartão' ? '' : 'none';
+};
+
+// ── Save ──
+window.salvar = async function() {
+  const valor = parseMoney(document.getElementById('f-valor').value);
+  const desc = document.getElementById('f-desc').value.trim();
+  if (!valor || !desc) { showToast('Preencha valor e descrição', 'err'); return; }
+  const entry = {
+    id: Date.now(),
+    tipo: formState.tipo,
+    categoria: formState.tipo==='gasto' ? formState.categoria : null,
+    valor,
+    forma_pagamento: formState.tipo==='gasto' ? formState.pgto : null,
+    bandeira: document.getElementById('f-bandeira').value || null,
+    parcelas: parseInt(document.getElementById('f-parcelas').value) || 1,
+    descricao: desc,
+    origem: formState.tipo==='receita' ? desc : null,
+    data: document.getElementById('f-data').value || todayStr(),
+    autor: currentUser,
+    ts: new Date().toISOString()
+  };
+  const next = [entry, ...entries];
+  await persist(next);
+  // Reset form
+  document.getElementById('f-valor').value = '';
+  document.getElementById('f-desc').value = '';
+  document.getElementById('f-parcelas').value = '1';
+  document.getElementById('f-bandeira').value = '';
+  document.getElementById('f-data').value = todayStr();
+  showToast('Salvo e sincronizado ✓');
+};
+
+// ── Delete ──
+window.deletar = async function(id) {
+  const e = entries.find(x => x.id === id);
+  if (e && e.autor && e.autor !== currentUser) { showToast('Só o autor pode excluir', 'err'); return; }
+  const next = entries.filter(x => x.id !== id);
+  await persist(next);
+};
+
+// ── Voice ──
+window.toggleRecording = function() {
+  if (recording) { recognition && recognition.stop(); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showToast('Navegador não suporta voz', 'err'); return; }
+  recognition = new SR();
+  recognition.lang = 'pt-BR'; recognition.continuous = false; recognition.interimResults = false;
+  recognition.onstart = () => {
+    recording = true;
+    document.getElementById('voice-btn').classList.add('recording');
+    document.getElementById('voice-btn').textContent = '⏹';
+    document.getElementById('voice-label').textContent = 'Gravando... toque para parar';
+    document.getElementById('voice-label').classList.add('recording');
+  };
+  recognition.onresult = async (e) => {
+    const text = e.results[0][0].transcript;
+    document.getElementById('transcript-text').textContent = '"' + text + '"';
+    document.getElementById('transcript-box').style.display = 'block';
+    document.getElementById('ai-loading').style.display = 'block';
+    stopRecUI();
+    const r = await parseWithAI(text);
+    document.getElementById('ai-loading').style.display = 'none';
+    if (r) applyParsed(r);
+  };
+  recognition.onerror = () => { stopRecUI(); showToast('Erro no microfone', 'err'); };
+  recognition.onend = () => stopRecUI();
+  recognition.start();
+};
+
+function stopRecUI() {
+  recording = false;
+  document.getElementById('voice-btn').classList.remove('recording');
+  document.getElementById('voice-btn').textContent = '🎙';
+  document.getElementById('voice-label').textContent = 'Toque para falar';
+  document.getElementById('voice-label').classList.remove('recording');
+}
+
+async function parseWithAI(text) {
+  const prompt = `Você é um assistente de finanças pessoais. O usuário disse: "${text}"
+Retorne APENAS JSON válido sem markdown:
+{"tipo":"gasto","categoria":"Casa","valor":null,"forma_pagamento":null,"bandeira":null,"parcelas":1,"descricao":"","origem":null}
+tipo: "gasto" ou "receita". categoria: Casa, Refúgio, Studio ou Biogeral.
+Regras: refúgio/chácara/sítio→Refúgio, studio/estúdio→Studio, bio/biogeral→Biogeral, casa/mercado/supermercado→Casa.
+Receita se: recebi/entrou/salário/honorários/pagamento recebido.`;
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:400, messages:[{role:'user',content:prompt}] })
+    });
+    const d = await r.json();
+    const raw = d.content.map(i=>i.text||'').join('');
+    return JSON.parse(raw.replace(/```json|```/g,'').trim());
+  } catch { return null; }
+}
+
+function applyParsed(r) {
+  if (r.tipo) setTipo(r.tipo);
+  if (r.categoria) setCat(r.categoria);
+  if (r.valor) document.getElementById('f-valor').value = String(r.valor);
+  if (r.forma_pagamento) setPgto(r.forma_pagamento);
+  if (r.bandeira) document.getElementById('f-bandeira').value = r.bandeira;
+  if (r.parcelas) document.getElementById('f-parcelas').value = r.parcelas;
+  const desc = r.tipo === 'receita' ? (r.origem || r.descricao) : r.descricao;
+  if (desc) document.getElementById('f-desc').value = desc;
+}
+
+// ── Render all ──
+function renderAll() {
+  renderEntries();
+  renderDashboard();
+}
+
+// ── Filter buttons ──
+function buildFilterBtns(containerId, currentFilter, setter) {
+  const autores = [...new Set(entries.map(e => e.autor).filter(Boolean))];
+  if (autores.length < 2) { document.getElementById(containerId).innerHTML=''; return; }
+  const all = ['Todos', ...autores];
+  document.getElementById(containerId).innerHTML = all.map(a => {
+    const col = a === 'Todos' ? '#7c3aed' : (USER_COLORS[a]||'#7c3aed');
+    const active = currentFilter === a;
+    return `<button class="filter-btn" onclick="${setter}('${a}')" style="${active ? `border-color:${col};background:${col}22;color:${col}` : ''}">${a==='Todos'?'👥 Todos':a}</button>`;
+  }).join('');
+}
+
+window.setFilter = function(u) { filterUser = u; renderEntries(); buildFilterBtns('filter-row', filterUser, 'setFilter'); };
+window.setDashFilter = function(u) { dashFilter = u; renderDashboard(); buildFilterBtns('dash-filter-row', dashFilter, 'setDashFilter'); };
+
+// ── Render entries ──
+function renderEntries() {
+  buildFilterBtns('filter-row', filterUser, 'setFilter');
+  const vis = filterUser==='Todos' ? entries : entries.filter(e=>e.autor===filterUser);
+  document.getElementById('entries-count').textContent = vis.length + ' lançamento(s)';
+  document.getElementById('loading-entries').style.display = 'none';
+  if (vis.length === 0) {
+    document.getElementById('entries-list').innerHTML = '<div class="empty-msg">Nenhum lançamento ainda.<br>Use a aba Registro para começar.</div>';
+    return;
+  }
+  document.getElementById('entries-list').innerHTML = vis.map(e => {
+    const col = e.tipo==='receita' ? '#22c55e' : '#f87171';
+    const iconBg = e.tipo==='receita' ? '#14532d' : ((CAT_COLORS[e.categoria]||'#888')+'22');
+    const icon = e.tipo==='receita' ? '💰' : (CAT_ICONS[e.categoria]||'📦');
+    const meta = e.tipo==='receita'
+      ? `Receita · ${e.data}`
+      : `${e.categoria} · ${e.data} · ${e.forma_pagamento||''}${e.bandeira?' '+e.bandeira:''}${e.parcelas>1?' · '+e.parcelas+'x':''}`;
+    const autStr = e.autor ? `<span style="color:${USER_COLORS[e.autor]||'#a78bfa'}"> · ${e.autor}</span>` : '';
+    const val = e.tipo==='receita' ? '+'+fmt(e.valor) : '-'+fmt(e.valor);
+    const parcel = e.parcelas>1 ? `<div class="entry-parcel">${fmt((e.valor||0)/e.parcelas)}/mês</div>` : '';
+    const canDel = !e.autor || e.autor===currentUser;
+    const delBtn = canDel ? `<button class="entry-del" onclick="deletar(${e.id})">✕</button>` : '';
+    return `<div class="entry-card ${e.tipo}">
+      <div class="entry-icon" style="background:${iconBg}">${icon}</div>
+      <div class="entry-info">
+        <div class="entry-desc">${e.descricao||e.origem||'—'}</div>
+        <div class="entry-meta">${meta}${autStr}</div>
+      </div>
+      <div class="entry-amount">
+        <div class="entry-value" style="color:${col}">${val}</div>${parcel}
+      </div>${delBtn}
+    </div>`;
+  }).join('');
+}
+
+// ── Render dashboard ──
+function renderDashboard() {
+  buildFilterBtns('dash-filter-row', dashFilter, 'setDashFilter');
+  const vis = dashFilter==='Todos' ? entries : entries.filter(e=>e.autor===dashFilter);
+  const gastos = vis.filter(e=>e.tipo==='gasto');
+  const receitas = vis.filter(e=>e.tipo==='receita');
+  const totalG = gastos.reduce((s,e)=>s+(e.valor||0),0);
+  const totalR = receitas.reduce((s,e)=>s+(e.valor||0),0);
+  const saldo = totalR - totalG;
+
+  document.getElementById('d-receitas').textContent = fmt(totalR);
+  document.getElementById('d-gastos').textContent = fmt(totalG);
+  const sd = document.getElementById('d-saldo');
+  sd.textContent = fmt(saldo); sd.style.color = saldo>=0 ? '#22c55e' : '#f87171';
+
+  // Categorias
+  document.getElementById('d-categorias').innerHTML = CATS.map(cat => {
+    const total = gastos.filter(e=>e.categoria===cat).reduce((s,e)=>s+(e.valor||0),0);
+    const count = gastos.filter(e=>e.categoria===cat).length;
+    const pct = totalG>0 ? (total/totalG*100).toFixed(1) : 0;
+    const col = CAT_COLORS[cat];
+    return `<div class="cat-bar-row">
+      <div class="cat-bar-top">
+        <span class="cat-bar-name" style="color:${col}">${cat}</span>
+        <span class="cat-bar-val">${fmt(total)} <span style="font-size:10px">(${count})</span></span>
+      </div>
+      <div class="cat-bar-track"><div class="cat-bar-fill" style="background:${col};width:${pct}%"></div></div>
+      <div class="cat-bar-pct">${pct}% do total</div>
+    </div>`;
+  }).join('');
+
+  // Pgto
+  document.getElementById('d-pgto').innerHTML = ['Dinheiro','Pix','Cartão'].map(f => {
+    const total = gastos.filter(e=>e.forma_pagamento===f).reduce((s,e)=>s+(e.valor||0),0);
+    const icon = f==='Dinheiro'?'💵':f==='Pix'?'⚡':'💳';
+    return `<div class="pgto-card">
+      <div class="pgto-card-icon">${icon}</div>
+      <div class="pgto-card-label">${f}</div>
+      <div class="pgto-card-val">${fmt(total)}</div>
+    </div>`;
+  }).join('');
+
+  // Por usuário
+  const autores = [...new Set(entries.map(e=>e.autor).filter(Boolean))];
+  if (autores.length > 1) {
+    document.getElementById('d-users-card').style.display = '';
+    document.getElementById('d-users').innerHTML = autores.map(a => {
+      const t = entries.filter(e=>e.tipo==='gasto'&&e.autor===a).reduce((s,e)=>s+(e.valor||0),0);
+      const col = USER_COLORS[a]||'#a78bfa';
+      return `<div class="user-row"><span style="color:${col};font-weight:600;font-size:13px">${a}</span><span style="font-weight:700;font-size:13px">${fmt(t)}</span></div>`;
+    }).join('');
+  }
+
+  // Recentes
+  const rec = entries.slice(0,6);
+  document.getElementById('d-recentes').innerHTML = rec.length ? rec.map(e=>{
+    const col = e.tipo==='receita'?'#22c55e':'#f87171';
+    const val = (e.tipo==='receita'?'+':'-')+fmt(e.valor);
+    const aut = e.autor ? `<span class="recent-author" style="color:${USER_COLORS[e.autor]||'#6b7280'}">(${e.autor})</span>`:'';
+    return `<div class="recent-row"><div><span class="recent-desc">${e.descricao||e.origem||'—'}</span>${aut}</div><span style="font-weight:600;color:${col}">${val}</span></div>`;
+  }).join('') : '<div style="color:var(--dim);font-size:12px">Nenhum dado ainda</div>';
+}
+
+
+// ── Attach all event listeners (required for module scripts) ──
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("btn-carlos")?.addEventListener("click", () => login("Carlos"));
+  document.getElementById("btn-deia")?.addEventListener("click", () => login("Deia"));
+  document.getElementById("user-badge")?.addEventListener("click", logout);
+  document.getElementById("tab-registro")?.addEventListener("click", () => switchTab("registro"));
+  document.getElementById("tab-lancamentos")?.addEventListener("click", () => switchTab("lancamentos"));
+  document.getElementById("tab-dashboard")?.addEventListener("click", () => switchTab("dashboard"));
+  document.getElementById("voice-btn")?.addEventListener("click", toggleRecording);
+  document.getElementById("btn-gasto")?.addEventListener("click", () => setTipo("gasto"));
+  document.getElementById("btn-receita")?.addEventListener("click", () => setTipo("receita"));
+  document.querySelectorAll(".cat-btn").forEach(b => b.addEventListener("click", () => setCat(b.textContent.trim())));
+  document.querySelectorAll(".pgto-btn").forEach(b => b.addEventListener("click", () => setPgto(b.textContent.trim())));
+  document.querySelector(".save-btn")?.addEventListener("click", salvar);
+});
+</script>
+</body>
+</html>
